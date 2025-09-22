@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Signage 1080p</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Signage YouTube</title>
   <style>
-    html,body{margin:0;height:100%;background:#000;overflow:hidden}
-    video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
-    #msg{position:fixed;inset:auto 0 0 0;color:#fff;font:16px/1.3 system-ui;text-align:center;opacity:.5}
-    body{cursor:none}
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+    }
+    #player {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
   </style>
+  <script>
+    const VIDEO_ID = "Wm5ZZ7J_e3A"; // ID de ta vidéo YouTube
+
+    // Charger l'API IFrame
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    let player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        videoId: VIDEO_ID,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          rel: 0,
+          fs: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          playsinline: 1
+        },
+        events: {
+          onReady: e => {
+            e.target.mute();   // autoplay garanti
+            e.target.playVideo();
+          },
+          onStateChange: e => {
+            if (e.data === YT.PlayerState.ENDED) {
+              player.seekTo(0); // reprend direct
+              player.playVideo();
+            }
+          }
+        }
+      });
+    }
+  </script>
 </head>
 <body>
-  <!-- IMPORTANT : muted + playsinline = permet l'autoplay -->
-  <video id="vid" autoplay muted playsinline preload="auto">
-    <!-- Si ta vidéo est à la racine du repo Pages -->
-    <source src="video.mp4?v=1" type="video/mp4">
-  </video>
-  <div id="msg"></div>
-
-  <script>
-    const v = document.getElementById('vid');
-    const msg = document.getElementById('msg');
-    const THRESHOLD = 0.06; // recoller avant la fin pour éviter tout flash
-
-    function log(t){ msg.textContent = t; }
-
-    function tryPlay() {
-      v.play().then(()=>log("lecture…"))
-        .catch(e=>log("autoplay bloqué, nouvelle tentative…"));
-    }
-
-    // boucle ultra fluide
-    function tick() {
-      if (v.duration && v.currentTime >= v.duration - THRESHOLD) {
-        v.currentTime = 0;
-        v.play().catch(()=>{});
-      }
-      requestAnimationFrame(tick);
-    }
-
-    v.addEventListener('canplay', () => { tryPlay(); requestAnimationFrame(tick); });
-    v.addEventListener('loadeddata', () => log("chargée"));
-    v.addEventListener('play', () => log(""));
-    v.addEventListener('error', () => {
-      log("erreur vidéo, rechargement…");
-      const s = v.querySelector('source');
-      s.src = s.src.split('?')[0] + '?t=' + Date.now(); // bust cache
-      v.load(); tryPlay();
-    });
-
-    // relance périodique si l’OS “gèle” l’onglet
-    setInterval(tryPlay, 5000);
-    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') tryPlay(); });
-  </script>
+  <div id="player"></div>
 </body>
 </html>
