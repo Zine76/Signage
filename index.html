@@ -3,24 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <title>Signage 1080p</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html,body{margin:0;height:100%;background:#000;overflow:hidden}
-    .wrap{position:fixed;inset:0}
-    video{width:100%;height:100%;object-fit:cover;background:#000}
-    body{cursor:none}
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+    .wrap { position:fixed; inset:0; }
+    video {
+      width:100%; height:100%;
+      object-fit:cover; background:#000;
+    }
+    /* Optionnel: cacher le curseur */
+    body { cursor:none; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <video id="vid" autoplay loop playsinline /* muted */>
+    <!-- retire "muted" si le Pod autorise l'autoplay avec son -->
+    <video id="vid" autoplay playsinline preload="auto" muted>
+      <!-- Si tu utilises une Release, mets ici l'URL complète de l'asset -->
       <source src="video.mp4" type="video/mp4">
+      Votre navigateur ne supporte pas la vidéo HTML5.
     </video>
   </div>
+
   <script>
+    // Boucle ultra fluide : on recale juste avant la fin pour éviter tout flash
     const v = document.getElementById('vid');
-    v.addEventListener('ended', ()=>{ v.currentTime=0; v.play(); });
-    document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') v.play().catch(()=>{});});
+    const THRESHOLD = 0.06; // secondes avant la fin pour “recoller” (ajuste 0.03–0.10 si besoin)
+
+    function tick() {
+      if (v.duration && v.currentTime >= v.duration - THRESHOLD) {
+        try {
+          v.currentTime = 0;
+          v.play();
+        } catch(e) {}
+      }
+      requestAnimationFrame(tick);
+    }
+
+    v.addEventListener('canplay', () => {
+      v.play().catch(()=>{});
+      requestAnimationFrame(tick);
+    });
+
+    // Si la page revient en avant-plan, relancer
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') v.play().catch(()=>{});
+    });
+
+    // En cas de plantage réseau, tente de recharger la source
+    v.addEventListener('error', () => {
+      const src = v.querySelector('source').src;
+      v.pause();
+      v.querySelector('source').src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+      v.load(); v.play().catch(()=>{});
+    });
   </script>
 </body>
 </html>
