@@ -4,34 +4,63 @@
   <meta charset="UTF-8" />
   <title>SavQonnect Signage Vidéo</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: black;
-      overflow: hidden;
-    }
-    .video-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    .video-container iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+    #wrap { position:fixed; inset:0; }
+    #player { width:100%; height:100%; border:0; }
+    /* optionnel : cacher le curseur et éviter tout scroll */
+    body { cursor:none; }
   </style>
+  <script>
+    // ====== Paramètres ======
+    const VIDEO_ID = "Wm5ZZ7J_e3A";  // ta vidéo
+    const MUTE_ON_START = false;      // mets true si l'autoplay coupe le son
+
+    // Charge l’API IFrame YouTube
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    let player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        videoId: VIDEO_ID,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          rel: 0,
+          fs: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          playsinline: 1,
+          // Pas de loop ici → on gère nous-mêmes pour éviter le reload
+        },
+        events: {
+          'onReady': e => {
+            if (MUTE_ON_START) e.target.mute();
+            e.target.playVideo();
+          },
+          'onStateChange': e => {
+            // Quand la vidéo se termine, on repart au début sans recharger l’iframe
+            if (e.data === YT.PlayerState.ENDED) {
+              player.seekTo(0, true);
+              player.playVideo();
+            }
+          }
+        }
+      });
+    }
+
+    // Relance si jamais l’onglet a été suspendu
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && player && player.playVideo) {
+        player.playVideo();
+      }
+    });
+  </script>
 </head>
 <body>
-  <div class="video-container">
-    <iframe 
-      src="https://www.youtube.com/embed/Wm5ZZ7J_e3A?autoplay=1&loop=1&playlist=Wm5ZZ7J_e3A&controls=0&rel=0&showinfo=0&modestbranding=1" 
-      allow="autoplay; fullscreen" 
-      allowfullscreen>
-    </iframe>
+  <div id="wrap">
+    <div id="player"></div>
   </div>
 </body>
 </html>
